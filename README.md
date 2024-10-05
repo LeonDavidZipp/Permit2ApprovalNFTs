@@ -1,3 +1,28 @@
+# Permit2 Approval NFTs
+
+-   NFTs that can be sent sent to creditors, allowing them to withdraw an amount specified by the debitor
+-   on resend of the NFT to the contract, the funds are transferred
+-   integrate with Permit2 to handle approvals associated with the NFT
+
+```mermaid
+sequenceDiagram
+  participant Debtor
+  participant Smart Contract
+  participant Creditor
+  Note over Creditor: whichever address holds<br/>the NFT can withdraw funds
+  Debtor->>Smart Contract: give token approval
+  Smart Contract->>Creditor: mint withdrawal NFT to
+  activate Creditor
+  opt
+    Creditor-->>Creditor: send NFT to<br/>other address
+  end
+  Creditor->>Smart Contract: call transfer function<br/>& retransfer NFT
+  deactivate Creditor
+  activate Smart Contract
+  Smart Contract->>Creditor: transfer approved funds<br/>from Account to
+  deactivate Smart Contract
+```
+
 # 🏗 Scaffold-ETH 2
 
 <h4 align="center">
