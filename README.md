@@ -1,26 +1,58 @@
 # Permit2 Approval NFTs
 
 -   NFTs that can be sent sent to creditors, allowing them to withdraw an amount specified by the debitor
+-   whichever address holds the NFT can withdraw funds
 -   on resend of the NFT to the contract, the funds are transferred
 -   integrate with Permit2 to handle approvals associated with the NFT
+
+## V1: No Listener
 
 ```mermaid
 sequenceDiagram
   participant Debtor
   participant Smart Contract
   participant Creditor
-  Note over Creditor: whichever address holds<br/>the NFT can withdraw funds
   Debtor->>Smart Contract: give token approval
   Smart Contract->>Creditor: mint withdrawal NFT to
   activate Creditor
   opt
     Creditor-->>Creditor: send NFT to<br/>other address
   end
-  Creditor->>Smart Contract: call transfer function<br/>& retransfer NFT
-  deactivate Creditor
+  Creditor->>Smart Contract: call transfer function
   activate Smart Contract
+  Smart Contract->>Creditor: withdraw NFT
   Smart Contract->>Creditor: transfer approved funds<br/>from Account to
+  deactivate Creditor
   deactivate Smart Contract
+```
+
+## V2: Listener
+
+```mermaid
+sequenceDiagram
+  participant Debtor
+  participant Listener
+  participant Smart Contract
+  participant Creditor
+  Debtor->>Smart Contract: give token approval
+  activate Smart Contract
+  Smart Contract->>Creditor: mint withdrawal NFT to
+  activate Listener
+  activate Creditor
+  opt
+    Creditor-->>Creditor: send NFT to<br/>other address
+  end
+  loop
+    Listener->>Listener: search transactions included<br/>in blocks for NFT transfers to<br/> Smart Contract
+  end
+  Creditor->>Smart Contract: send NFT back to
+  Listener->>Smart Contract: call token transfer method
+  Smart Contract->>Creditor: send funds to
+  %% Smart Contract->>Creditor: withdraw NFT
+  %% Smart Contract->>Creditor: transfer approved funds<br/>from Account to
+  deactivate Creditor
+  deactivate Smart Contract
+  deactivate Listener
 ```
 
 # 🏗 Scaffold-ETH 2
@@ -34,11 +66,11 @@ sequenceDiagram
 
 ⚙️ Built using NextJS, RainbowKit, Foundry, Wagmi, Viem, and Typescript.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+-   ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
+-   🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
+-   🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
+-   🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
+-   🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
 
 ![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
 
@@ -46,9 +78,9 @@ sequenceDiagram
 
 Before you begin, you need to install the following tools:
 
-- [Node (>= v18.18)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+-   [Node (>= v18.18)](https://nodejs.org/en/download/)
+-   Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
+-   [Git](https://git-scm.com/downloads)
 
 ## Quickstart
 
@@ -87,10 +119,9 @@ Visit your app on: `http://localhost:3000`. You can interact with your smart con
 
 Run smart contract test with `yarn foundry:test`
 
-- Edit your smart contract `YourContract.sol` in `packages/foundry/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/foundry/script`
-
+-   Edit your smart contract `YourContract.sol` in `packages/foundry/contracts`
+-   Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
+-   Edit your deployment scripts in `packages/foundry/script`
 
 ## Documentation
 
