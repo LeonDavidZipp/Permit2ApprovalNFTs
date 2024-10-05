@@ -8,9 +8,24 @@ import "@openzeppelin/contracts/utils/Nonces.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
 
-contract ApprovalNFT is ERC721Enumerable, IERC721Receiver, Ownable, Nonces, ReentrancyGuard {
-    IAllowanceTransfer private constant _PERMIT_2 = IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    mapping(uint256 tokenId => IAllowanceTransfer.PermitDetails[]) private _permits;
+contract ApprovalNFT is
+    ERC721Enumerable,
+    IERC721Receiver,
+    Ownable,
+    Nonces,
+    ReentrancyGuard
+{
+    struct PermissionDetails {
+        IAllowanceTransfer.PermitDetails[] details;
+        address from;
+    }
+
+    IAllowanceTransfer private constant _PERMIT_2 =
+        IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
+    mapping(uint256 tokenId => PermissionDetails) private _permits;
+
+    error OutOfBoundsID(uint256 tokenId);
+    error NotOwner(address account, uint256 tokenId);
 
     constructor(
         address owner_,
@@ -40,7 +55,11 @@ contract ApprovalNFT is ERC721Enumerable, IERC721Receiver, Ownable, Nonces, Reen
 
         uint256 nextId = totalSupply();
         _mint(to, nextId);
-        _permits[nextId] = permit.details;
+
+        PermissionDetails memory details;
+        details.details = permit.details;
+        details.from = sender;
+        _permits[nextId] = details;
     }
 
     /**
@@ -61,21 +80,51 @@ contract ApprovalNFT is ERC721Enumerable, IERC721Receiver, Ownable, Nonces, Reen
 
         uint256 nextId = totalSupply();
         _safeMint(to, nextId);
-        _permits[nextId] = permit.details;
+
+        PermissionDetails memory details;
+        details.details = permit.details;
+        details.from = sender;
+        _permits[nextId] = details;
     }
 
     /* ------------------------------------------------------------------ */
     /* Transfer Funds Functions                                           */
     /* ------------------------------------------------------------------ */
     /**
-     
+     * @notice Transfer funds from the debtor to the NFT holder
+     * @param tokenId The ID of the NFT
      */
-    function transferFunds() external {
+    function transferFunds(uint256 tokenId) external nonReentrant {
         // check if sender has one or more NFTs, revert if not
-        // transfer NFT back to this contract
+        if (tokenId >= totalSupply()) {
+            revert OutOfBoundsID(tokenId);
+        }
+        address sender = _msgSender();
+        if (sender != _ownerOf(tokenId)) {
+            revert NotOwner(sender, tokenId);
+        }
         // grab associated permit
-        // transfer funds
+        PermissionDetails storage permit = _permits[tokenId];
+        unchecked {
+            uint256 len = permit.details.length;
+            IAllowanceTransfer.AllowanceTransferDetails[] memory details =
+                new IAllowanceTransfer.AllowanceTransferDetails[](len);
+            IAllowanceTransfer.AllowanceTransferDetails memory detail;
+            for (uint256 i; i < len; ++i) {
+                detail.from = permit.from;
+                detail.to = sender;
+                detail.amount = permit.details[i].amount;
+                detail.token = permit.details[i].token;
+
+                details[i] = detail;
+            }
+            // transfer funds
+            _PERMIT_2.transferFrom(details);
+        }
         // destroy NFT & delete permit
+        _burn(tokenId);
+
+        delete _permits[tokenId];
     }
 
     /**
