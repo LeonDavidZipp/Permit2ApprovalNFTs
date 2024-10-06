@@ -22,7 +22,7 @@ contract ApprovalNFT is
 
     IAllowanceTransfer private constant _PERMIT_2 =
         IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    mapping(uint256 tokenId => PermissionDetails) private _permits;
+    mapping(uint256 tokenId => IAllowanceTransfer.AllowanceTransferDetails[]) private _permits;
 
     error OutOfBoundsID(uint256 tokenId);
     error NotOwner(address account, uint256 tokenId);
@@ -59,8 +59,23 @@ contract ApprovalNFT is
         unchecked {
             uint256 len = permit.details.length;
             for (uint256 i; i < len; ++i) {
-                _permits[nextId].details.push(permit.details[i]);
+                _permits[nextId][i].from = sender;
+                _permits[nextId][i].to = to;
+                _permits[nextId][i].amount = permit.details[i].amount;
+                _permits[nextId][i].token = permit.details[i].token;
             }
+            // uint256 len = permit.details.length;
+            // IAllowanceTransfer.AllowanceTransferDetails[] memory details =
+            //     new IAllowanceTransfer.AllowanceTransferDetails[](len);
+            // // IAllowanceTransfer.AllowanceTransferDetails memory detail;
+            // for (uint256 i; i < len; ++i) {
+            //     details[i].from = permit.from;
+            //     details[i].to = sender;
+            //     details[i].amount = permit.details[i].amount;
+            //     details[i].token = permit.details[i].token;
+
+            //     // details[i] = detail;
+            // }
         }
         _permits[nextId].from = sender;
     }
@@ -110,25 +125,25 @@ contract ApprovalNFT is
             revert NotOwner(sender, tokenId);
         }
         // grab associated permit
-        PermissionDetails storage permit = _permits[tokenId];
-        unchecked {
-            uint256 len = permit.details.length;
-            IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-                new IAllowanceTransfer.AllowanceTransferDetails[](len);
-            // IAllowanceTransfer.AllowanceTransferDetails memory detail;
-            for (uint256 i; i < len; ++i) {
-                details[i].from = permit.from;
-                details[i].to = sender;
-                details[i].amount = permit.details[i].amount;
-                details[i].token = permit.details[i].token;
+        PermissionDetails storage details = _permits[tokenId];
+        // unchecked {
+        //     uint256 len = permit.details.length;
+        //     IAllowanceTransfer.AllowanceTransferDetails[] memory details =
+        //         new IAllowanceTransfer.AllowanceTransferDetails[](len);
+        //     // IAllowanceTransfer.AllowanceTransferDetails memory detail;
+        //     for (uint256 i; i < len; ++i) {
+        //         details[i].from = permit.from;
+        //         details[i].to = sender;
+        //         details[i].amount = permit.details[i].amount;
+        //         details[i].token = permit.details[i].token;
 
-                // details[i] = detail;
-            }
+        //         // details[i] = detail;
+        //     }
             // burn NFT & transfer funds
-            _burn(tokenId);
-            _PERMIT_2.transferFrom(details);
-        }
+        // }
         // delete permit
+        _burn(tokenId);
+        _PERMIT_2.transferFrom(details);
         delete _permits[tokenId];
     }
 
