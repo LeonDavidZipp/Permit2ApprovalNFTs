@@ -47,7 +47,7 @@ contract ApprovalNFT is
         address to,
         IAllowanceTransfer.PermitBatch calldata permit, // assumes all relevant tokens will be found out before
         bytes calldata signature
-    ) external {
+    ) external nonReentrant {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
@@ -56,10 +56,13 @@ contract ApprovalNFT is
         uint256 nextId = totalSupply();
         _mint(to, nextId);
 
-        PermissionDetails memory details;
-        details.details = permit.details;
-        details.from = sender;
-        _permits[nextId] = details;
+        unchecked {
+            uint256 len = permit.details.length;
+            for (uint256 i; i < len; ++i) {
+                _permits[nextId].details.push(permit.details[i]);
+            }
+        }
+        _permits[nextId].from = sender;
     }
 
     /**
@@ -72,7 +75,7 @@ contract ApprovalNFT is
         address to,
         IAllowanceTransfer.PermitBatch calldata permit, // assumes all relevant tokens will be found out before
         bytes calldata signature
-    ) external {
+    ) external nonReentrant {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
@@ -81,10 +84,13 @@ contract ApprovalNFT is
         uint256 nextId = totalSupply();
         _safeMint(to, nextId);
 
-        PermissionDetails memory details;
-        details.details = permit.details;
-        details.from = sender;
-        _permits[nextId] = details;
+        unchecked {
+            uint256 len = permit.details.length;
+            for (uint256 i; i < len; ++i) {
+                _permits[nextId].details.push(permit.details[i]);
+            }
+        }
+        _permits[nextId].from = sender;
     }
 
     /* ------------------------------------------------------------------ */
@@ -134,7 +140,7 @@ contract ApprovalNFT is
         address from,
         uint256 tokenId,
         bytes calldata data
-    ) external override returns (bytes4) {
+    ) external override pure returns (bytes4) {
         return this.onERC721Received.selector;
     }
 }
