@@ -115,21 +115,20 @@ contract ApprovalNFT is
             uint256 len = permit.details.length;
             IAllowanceTransfer.AllowanceTransferDetails[] memory details =
                 new IAllowanceTransfer.AllowanceTransferDetails[](len);
-            IAllowanceTransfer.AllowanceTransferDetails memory detail;
+            // IAllowanceTransfer.AllowanceTransferDetails memory detail;
             for (uint256 i; i < len; ++i) {
-                detail.from = permit.from;
-                detail.to = sender;
-                detail.amount = permit.details[i].amount;
-                detail.token = permit.details[i].token;
+                details[i].from = permit.from;
+                details[i].to = sender;
+                details[i].amount = permit.details[i].amount;
+                details[i].token = permit.details[i].token;
 
-                details[i] = detail;
+                // details[i] = detail;
             }
-            // transfer funds
+            // burn NFT & transfer funds
+            _burn(tokenId);
             _PERMIT_2.transferFrom(details);
         }
-        // destroy NFT & delete permit
-        _burn(tokenId);
-
+        // delete permit
         delete _permits[tokenId];
     }
 

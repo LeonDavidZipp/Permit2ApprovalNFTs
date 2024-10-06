@@ -117,8 +117,8 @@ contract ApprovalNFTV2Test is
 
     function setUp() public {
         initializeERC20Tokens();
-        setERC20TestTokens(owner);
-        setERC20TestTokenApprovals(vm, owner, permit2);
+        setERC20TestTokens(pubKey1);
+        setERC20TestTokenApprovals(vm, pubKey1, permit2);
         nft = new ApprovalNFT(owner, "TestNFT", "TNFT");
     }
 
@@ -134,5 +134,39 @@ contract ApprovalNFTV2Test is
 
     function test_safeMintAllowanceNFT() public {
         _safeMintAllowanceNFT();
+    }
+
+    function test_transferFunds() public {
+        _mintAllowanceNFT();
+
+        uint256 balance1_token0 = token0.balanceOf(pubKey1);
+        uint256 balance1_token1 = token1.balanceOf(pubKey1);
+
+        vm.prank(pubKey2);
+        nft.transferFunds(0);
+
+        assertEq(token0.balanceOf(pubKey2), defaultAmount);
+        assertEq(token1.balanceOf(pubKey2), defaultAmount);
+        assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
+        assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
+    }
+
+    function test_transferFunds_afterNFTChangedOwner() public {
+        _mintAllowanceNFT();
+        vm.prank(pubKey2);
+        nft.safeTransferFrom(pubKey2, pubKey3, 0);
+
+        assertEq(nft.ownerOf(0), pubKey3);
+
+        uint256 balance1_token0 = token0.balanceOf(pubKey1);
+        uint256 balance1_token1 = token1.balanceOf(pubKey1);
+
+        vm.prank(pubKey3);
+        nft.transferFunds(0);
+
+        assertEq(token0.balanceOf(pubKey3), defaultAmount);
+        assertEq(token1.balanceOf(pubKey3), defaultAmount);
+        assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
+        assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
     }
 }
