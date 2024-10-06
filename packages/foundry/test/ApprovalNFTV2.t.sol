@@ -169,4 +169,10 @@ contract ApprovalNFTV2Test is
         assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
         assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
     }
+
+    function testFail_transferFunds_notOwner() public {
+        _mintAllowanceNFT();
+        vm.prank(pubKey3);
+        nft.transferFunds(0);
+    }
 }
