@@ -136,8 +136,9 @@ contract ApprovalNFT is
         delete _permits[tokenId];
     }
 
-    /**
-     */
+    /* ------------------------------------------------------------------ */
+    /* ERC721Receiver Functions                                           */
+    /* ------------------------------------------------------------------ */
     function onERC721Received(
         address operator,
         address from,
