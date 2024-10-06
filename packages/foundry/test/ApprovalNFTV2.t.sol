@@ -36,6 +36,10 @@ contract ApprovalNFTV2Test is
         IAllowanceTransfer(permit2).DOMAIN_SEPARATOR();
     ApprovalNFT public nft;
 
+    /* ------------------------------------------------------------------ */
+    /* Helper Functions                                                   */
+    /* ------------------------------------------------------------------ */
+
     function _defaultERC20PermitBatchAllowance(
         address[] memory tokens,
         uint160 amount,
@@ -122,12 +126,18 @@ contract ApprovalNFTV2Test is
         nft = new ApprovalNFT(owner, "TestNFT", "TNFT");
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Constructor                                                        */
+    /* ------------------------------------------------------------------ */
     function test_constructor() public view {
         assertEq(nft.owner(), owner);
         assertEq(nft.name(), "TestNFT");
         assertEq(nft.symbol(), "TNFT");
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Mint Functions                                                     */
+    /* ------------------------------------------------------------------ */
     function test_mintAllowanceNFT() public {
         _mintAllowanceNFT();
     }
@@ -136,6 +146,9 @@ contract ApprovalNFTV2Test is
         _safeMintAllowanceNFT();
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Transfer Functions                                                 */
+    /* ------------------------------------------------------------------ */
     function test_transferFunds() public {
         _mintAllowanceNFT();
 
