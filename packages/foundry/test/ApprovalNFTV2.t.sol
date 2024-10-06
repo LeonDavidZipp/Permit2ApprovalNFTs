@@ -47,7 +47,8 @@ contract ApprovalNFTV2Test is
         uint48 nonce,
         address spender
     ) internal view returns (IAllowanceTransfer.PermitBatch memory) {
-        IAllowanceTransfer.PermitDetails[] memory details = new IAllowanceTransfer.PermitDetails[](tokens.length);
+        IAllowanceTransfer.PermitDetails[] memory details =
+            new IAllowanceTransfer.PermitDetails[](tokens.length);
 
         for (uint256 i = 0; i < tokens.length; ++i) {
             details[i] = IAllowanceTransfer.PermitDetails({
@@ -58,29 +59,38 @@ contract ApprovalNFTV2Test is
             });
         }
 
-        return IAllowanceTransfer.PermitBatch({details: details, spender: spender, sigDeadline: block.timestamp + 100});
+        return IAllowanceTransfer.PermitBatch({
+            details: details,
+            spender: spender,
+            sigDeadline: block.timestamp + 100
+        });
     }
 
     function _mintAllowanceNFT() public {
-        address[] memory tokens = AddressBuilder.fill(1, address(token0)).push(address(token1));
-        IAllowanceTransfer.PermitBatch memory permitBatch = _defaultERC20PermitBatchAllowance(
+        address[] memory tokens =
+            AddressBuilder.fill(1, address(token0)).push(address(token1));
+        IAllowanceTransfer.PermitBatch memory permitBatch =
+        _defaultERC20PermitBatchAllowance(
             tokens, defaultAmount, defaultExpiration, defaultNonce, address(nft)
         );
-        bytes memory sig1 = getPermitBatchSignature(permitBatch, acc1, DOMAIN_SEPARATOR);
+        bytes memory sig1 =
+            getPermitBatchSignature(permitBatch, acc1, DOMAIN_SEPARATOR);
 
         // mint nft with permit to pubKey2
         vm.prank(pubKey1);
         nft.mintAllowanceNFT(pubKey2, permitBatch, sig1);
 
         // check allowances for nft contract
-        (uint160 amount, uint48 expiration, uint48 nonce) =
-            IAllowanceTransfer(permit2).allowance(pubKey1, address(token0), address(nft));
+        (uint160 amount, uint48 expiration, uint48 nonce) = IAllowanceTransfer(
+            permit2
+        ).allowance(pubKey1, address(token0), address(nft));
         assertEq(amount, defaultAmount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
 
-        (amount, expiration, nonce) =
-            IAllowanceTransfer(permit2).allowance(pubKey1, address(token1), address(nft));
+        (amount, expiration, nonce) = IAllowanceTransfer(permit2).allowance(
+            pubKey1, address(token1), address(nft)
+        );
         assertEq(amount, defaultAmount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
@@ -91,25 +101,30 @@ contract ApprovalNFTV2Test is
     }
 
     function _safeMintAllowanceNFT() public {
-        address[] memory tokens = AddressBuilder.fill(1, address(token0)).push(address(token1));
-        IAllowanceTransfer.PermitBatch memory permitBatch = _defaultERC20PermitBatchAllowance(
+        address[] memory tokens =
+            AddressBuilder.fill(1, address(token0)).push(address(token1));
+        IAllowanceTransfer.PermitBatch memory permitBatch =
+        _defaultERC20PermitBatchAllowance(
             tokens, defaultAmount, defaultExpiration, defaultNonce, address(nft)
         );
-        bytes memory sig1 = getPermitBatchSignature(permitBatch, acc1, DOMAIN_SEPARATOR);
+        bytes memory sig1 =
+            getPermitBatchSignature(permitBatch, acc1, DOMAIN_SEPARATOR);
 
         // mint nft with permit to pubKey2
         vm.prank(pubKey1);
         nft.safeMintAllowanceNFT(pubKey2, permitBatch, sig1);
 
         // check allowances for nft contract
-        (uint160 amount, uint48 expiration, uint48 nonce) =
-            IAllowanceTransfer(permit2).allowance(pubKey1, address(token0), address(nft));
+        (uint160 amount, uint48 expiration, uint48 nonce) = IAllowanceTransfer(
+            permit2
+        ).allowance(pubKey1, address(token0), address(nft));
         assertEq(amount, defaultAmount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
 
-        (amount, expiration, nonce) =
-            IAllowanceTransfer(permit2).allowance(pubKey1, address(token1), address(nft));
+        (amount, expiration, nonce) = IAllowanceTransfer(permit2).allowance(
+            pubKey1, address(token1), address(nft)
+        );
         assertEq(amount, defaultAmount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);

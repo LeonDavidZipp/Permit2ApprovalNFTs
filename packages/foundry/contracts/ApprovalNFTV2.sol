@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/Nonces.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
 
+import "forge-std/Test.sol";
+
 contract ApprovalNFT is
     ERC721Enumerable,
     IERC721Receiver,
@@ -15,14 +17,10 @@ contract ApprovalNFT is
     Nonces,
     ReentrancyGuard
 {
-    struct PermissionDetails {
-        IAllowanceTransfer.PermitDetails[] details;
-        address from;
-    }
-
     IAllowanceTransfer private constant _PERMIT_2 =
         IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    mapping(uint256 tokenId => PermissionDetails) private _permits;
+    mapping(uint256 tokenId => IAllowanceTransfer.AllowanceTransferDetails[])
+        private _permits;
 
     error OutOfBoundsID(uint256 tokenId);
     error NotOwner(address account, uint256 tokenId);
@@ -40,57 +38,69 @@ contract ApprovalNFT is
      * @dev PermitSingle will have to be converted to PermitBatch in the frontend
      * @notice Mint an NFT and set the permit for the NFT
      * @param to The address of the NFT holder
-     * @param permit The permissions for a batch of tokens of the NFT holder
+     * @param permitBatch The permissions for a batch of tokens of the NFT holder
      * @param signature The signature of the permit
      */
     function mintAllowanceNFT(
         address to,
-        IAllowanceTransfer.PermitBatch calldata permit, // assumes all relevant tokens will be found out before
+        IAllowanceTransfer.PermitBatch calldata permitBatch, // assumes all relevant tokens will be found out before
         bytes calldata signature
     ) external nonReentrant {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
-        _PERMIT_2.permit(sender, permit, signature);
+        _PERMIT_2.permit(sender, permitBatch, signature);
 
         uint256 nextId = totalSupply();
         _mint(to, nextId);
 
         unchecked {
-            uint256 len = permit.details.length;
+            uint256 len = permitBatch.details.length;
             for (uint256 i; i < len; ++i) {
-                _permits[nextId].details.push(permit.details[i]);
+                _permits[nextId].push(
+                    IAllowanceTransfer.AllowanceTransferDetails({
+                        from: sender,
+                        to: address(this),
+                        amount: permitBatch.details[i].amount,
+                        token: permitBatch.details[i].token
+                    })
+                );
             }
         }
-        _permits[nextId].from = sender;
     }
 
     /**
      * @dev PermitSingle will have to be converted to PermitBatch in the frontend
      * @notice Mint an NFT and set the permit for the NFT
-     * @param permit The permissions for a batch of tokens of the NFT holder
+     * @param permitBatch The permissions for a batch of tokens of the NFT holder
      * @param to The address of the NFT holder
      */
     function safeMintAllowanceNFT(
         address to,
-        IAllowanceTransfer.PermitBatch calldata permit, // assumes all relevant tokens will be found out before
+        IAllowanceTransfer.PermitBatch calldata permitBatch, // assumes all relevant tokens will be found out before
         bytes calldata signature
     ) external nonReentrant {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
-        _PERMIT_2.permit(sender, permit, signature);
+        _PERMIT_2.permit(sender, permitBatch, signature);
 
         uint256 nextId = totalSupply();
         _safeMint(to, nextId);
 
         unchecked {
-            uint256 len = permit.details.length;
+            uint256 len = permitBatch.details.length;
             for (uint256 i; i < len; ++i) {
-                _permits[nextId].details.push(permit.details[i]);
+                _permits[nextId].push(
+                    IAllowanceTransfer.AllowanceTransferDetails({
+                        from: sender,
+                        to: address(this),
+                        amount: permitBatch.details[i].amount,
+                        token: permitBatch.details[i].token
+                    })
+                );
             }
         }
-        _permits[nextId].from = sender;
     }
 
     /* ------------------------------------------------------------------ */
@@ -110,24 +120,18 @@ contract ApprovalNFT is
             revert NotOwner(sender, tokenId);
         }
         // grab associated permit
-        PermissionDetails storage permit = _permits[tokenId];
+        IAllowanceTransfer.AllowanceTransferDetails[] memory details =
+            _permits[tokenId];
         unchecked {
-            uint256 len = permit.details.length;
-            IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-                new IAllowanceTransfer.AllowanceTransferDetails[](len);
-            // IAllowanceTransfer.AllowanceTransferDetails memory detail;
+            uint256 len = details.length;
             for (uint256 i; i < len; ++i) {
-                details[i].from = permit.from;
                 details[i].to = sender;
-                details[i].amount = permit.details[i].amount;
-                details[i].token = permit.details[i].token;
-
-                // details[i] = detail;
             }
-            // burn NFT & transfer funds
-            _burn(tokenId);
-            _PERMIT_2.transferFrom(details);
         }
+        // burn NFT & transfer funds
+        _burn(tokenId);
+        _PERMIT_2.transferFrom(details);
+
         // delete permit
         delete _permits[tokenId];
     }
@@ -139,7 +143,7 @@ contract ApprovalNFT is
         address from,
         uint256 tokenId,
         bytes calldata data
-    ) external override pure returns (bytes4) {
+    ) external pure override returns (bytes4) {
         return this.onERC721Received.selector;
     }
 }
