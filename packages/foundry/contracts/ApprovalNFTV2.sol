@@ -33,11 +33,9 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     /* ------------------------------------------------------------------ */
     /* Events                                                             */
     /* ------------------------------------------------------------------ */
-    event DebtorRegistered(address indexed debtor);
-    event PermitsUpdated(address indexed debtor);
-    event DebtorUnregistered(address indexed debtor);
+    event PermissionsUpdated(address indexed user);
     event NFTMinted(address indexed to, uint256 tokenId);
-    event FundsTransferred(address indexed to, uint256 tokenId);
+    event FundsTransferred(address indexed to);
 
     /* ------------------------------------------------------------------ */
     /* Errors                                                             */
@@ -103,7 +101,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     ) ERC721(name_, symbol_) Ownable(owner_) { }
 
     /* ------------------------------------------------------------------ */
-    /* Debtor Functions                                                   */
+    /* Permission Functions                                               */
     /* ------------------------------------------------------------------ */
     /// @notice Update or add permissions for a debtor using permit2
     /// @param permitBatch The permissions for a batch of tokens of the debtor
@@ -122,7 +120,16 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
             }
         }
 
-        emit DebtorRegistered(sender);
+        emit PermissionsUpdated(sender);
+    }
+
+    /// @notice returns the approved amount for a token for a user
+    function permissionedAmount(address user, address token)
+        external
+        view
+        returns (uint160 amount)
+    {
+        amount = _debtors[user][token];
     }
 
     /* ------------------------------------------------------------------ */
@@ -194,13 +201,14 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         // transfer funds
         _PERMIT_2.transferFrom(details);
 
-        emit FundsTransferred(sender, tokenId);
+        emit FundsTransferred(sender);
     }
 
     /* ------------------------------------------------------------------ */
     /* Invalidate NFT Functions                                           */
     /* ------------------------------------------------------------------ */
     /// @notice Invalidate an NFT (either by the owner or the debtor)
+    /// @param tokenId The ID of the NFT
     function invalidateNFT(uint256 tokenId) external {
         address sender = _msgSender();
         if (
