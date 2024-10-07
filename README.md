@@ -12,13 +12,14 @@ sequenceDiagram
   participant Debtor
   participant Smart Contract
   participant Creditor
-  Debtor->>Smart Contract: give token approval
+  Debtor->>Smart Contract: give initial (best: infinite)<br/>token approval
+  Debtor->>Smart Contract: provide withdrawal details<br/>for NFT
   Smart Contract->>Creditor: mint withdrawal NFT to
   activate Creditor
   opt
     Creditor-->>Creditor: send NFT to<br/>other address
   end
-  Creditor->>Smart Contract: call transfer function
+  Creditor->>Smart Contract: call transferFunds function
   activate Smart Contract
   Smart Contract->>Creditor: withdraw NFT
   Smart Contract->>Creditor: transfer approved funds<br/>from Account to
