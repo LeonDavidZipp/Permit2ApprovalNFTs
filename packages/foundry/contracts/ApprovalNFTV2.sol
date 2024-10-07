@@ -4,16 +4,14 @@ pragma solidity >=0.8.0 <0.9.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
+import "./Permit2Registerer.sol";
 
 import "forge-std/Test.sol";
 
-contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
-    address private constant _Permit_2_ADDRESS =
-        address(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     IAllowanceTransfer private constant _PERMIT_2 =
-        IAllowanceTransfer(_Permit_2_ADDRESS);
+        IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     mapping(uint256 tokenId => IAllowanceTransfer.AllowanceTransferDetails[])
         private _permits;
     mapping(address user => bool) private _debtors;
@@ -31,6 +29,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     /* Errors                                                             */
     /* ------------------------------------------------------------------ */
     error NotOwner(address account, uint256 tokenId);
+    error NotDebtor(address account);
 
     /* ------------------------------------------------------------------ */
     /* Modifiers                                                          */
@@ -88,35 +87,6 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     ) ERC721(name_, symbol_) Ownable(owner_) { }
 
     /* ------------------------------------------------------------------ */
-    /* Permit2 Functions                                                  */
-    /* ------------------------------------------------------------------ */
-    /**
-     * @notice Helper function for users to approve permit2
-     * @param tokens The tokens to approve
-     */
-    function registerForPermit2(address[] calldata tokens) external {
-        unchecked {
-            uint256 len = tokens.length;
-            for (uint256 i; i < len; ++i) {
-                ERC20(tokens[i]).approve(_Permit_2_ADDRESS, type(uint256).max);
-            }
-        }
-    }
-
-    /**
-     * @notice Helper function for users to revoke permit2
-     * @param tokens The tokens to revoke
-     */
-    function unregisterForPermit2(address[] calldata tokens) external {
-        unchecked {
-            uint256 len = tokens.length;
-            for (uint256 i; i < len; ++i) {
-                ERC20(tokens[i]).approve(_Permit_2_ADDRESS, 0);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------------ */
     /* Debtor Functions                                                   */
     /* ------------------------------------------------------------------ */
     /**
@@ -132,7 +102,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         _PERMIT_2.permit(sender, permitBatch, signature);
         _debtors[sender] = true;
 
-        event DebtorRegistered(sender);
+        emit DebtorRegistered(sender);
     }
 
     /**
@@ -147,7 +117,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         address sender = _msgSender();
         _PERMIT_2.permit(sender, permitBatch, signature);
 
-        event PermitsUpdated(sender);
+        emit PermitsUpdated(sender);
     }
 
     /**
@@ -157,7 +127,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     function unregisterAsDebtor(
         IAllowanceTransfer.PermitBatch calldata permitBatch,
         bytes calldata signature
-    ) external {
+    ) external onlyDebtor {
         address sender = _msgSender();
         _PERMIT_2.permit(sender, permitBatch, signature);
         delete _debtors[sender];
@@ -215,7 +185,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
      * @notice Transfer funds from the debtor to the NFT holder
      * @param tokenId The ID of the NFT
      */
-    function transferFunds(uint256 tokenId) external nonReentrant {
+    function transferFunds(uint256 tokenId) external {
         address sender = _msgSender();
         if (sender != _ownerOf(tokenId)) {
             revert NotOwner(sender, tokenId);
