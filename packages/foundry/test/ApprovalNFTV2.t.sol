@@ -232,7 +232,9 @@ contract ApprovalNFTV2Test is
         assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
     }
 
-    function test_transferFunds_multipleNFT_differentDebtors_inParallel() public {
+    function test_transferFunds_multipleNFT_differentDebtors_inParallel()
+        public
+    {
         _mintAllowanceNFT(acc1, pubKey1, pubKey2);
         _mintAllowanceNFT(acc2, pubKey2, pubKey3);
 
@@ -261,7 +263,9 @@ contract ApprovalNFTV2Test is
         assertEq(token1.balanceOf(pubKey2), balance2_token1 - defaultAmount);
     }
 
-    function test_transferFunds_multipleNFT_differentDebtors_inSuccession() public {
+    function test_transferFunds_multipleNFT_differentDebtors_inSuccession()
+        public
+    {
         _mintAllowanceNFT(acc1, pubKey1, pubKey2);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
