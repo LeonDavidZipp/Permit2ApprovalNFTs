@@ -22,6 +22,7 @@ contract ApprovalNFT is
         IAllowanceTransfer(_Permit_2_ADDRESS);
     mapping(uint256 tokenId => IAllowanceTransfer.AllowanceTransferDetails[])
         private _permits;
+    mapping(address user => bool) private _debtors;
 
     /* ------------------------------------------------------------------ */
     /* Errors                                                             */
@@ -33,6 +34,16 @@ contract ApprovalNFT is
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) Ownable(owner_) { }
+
+    /* ------------------------------------------------------------------ */
+    /* Modifiers                                                          */
+    /* ------------------------------------------------------------------ */
+    modifier onlyDebtor() {
+        if (!_debtors[_msgSender()]) {
+            revert("ApprovalNFT: caller is not a debtor");
+        }
+        _;
+    }
 
     /* ------------------------------------------------------------------ */
     /* Fallback Functions                                                 */
@@ -58,6 +69,46 @@ contract ApprovalNFT is
     }
 
     /* ------------------------------------------------------------------ */
+    /* Debtor Functions                                                   */
+    /* ------------------------------------------------------------------ */
+    /**
+     * @notice Register an address as a debtor, allowing the address to send nft
+     * @param permitBatch The permissions for a batch of tokens of the debtor
+     */
+    function registerAsDebtor(
+        IAllowanceTransfer.PermitBatch calldata permitBatch,
+        bytes calldata signature
+    ) external {
+        address sender = _msgSender();
+        _PERMIT_2.permit(sender, permitBatch, signature);
+        _debtors[sender] = true;
+    }
+
+    /**
+     * @notice Update the permits for the debtor
+     * @param permitBatch The permissions for a batch of tokens of the debtor
+     */
+    function updatePermits(
+        AllowanceTransfer.PermitBatch calldata permitBatch,
+        bytes calldata signature
+    ) external onlyDebtor {
+        _PERMIT_2.permit(_msgSender(), permitBatch, signature);
+    }
+
+    /**
+     * @notice Unregister an address as a debtor, disallowing the address to send nft
+     * @param permitBatch The permissions for a batch of tokens of the debtor
+     */
+    function unregisterAsDebtor(
+        IAllowanceTransfer.PermitBatch calldata permitBatch,
+        bytes calldata signature
+    ) external {
+        address sender = _msgSender();
+        _PERMIT_2.permit(sender, permitBatch, signature);
+        _debtors[sender] = false;
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Mint Functions                                                     */
     /* ------------------------------------------------------------------ */
     /**
@@ -69,19 +120,19 @@ contract ApprovalNFT is
      */
     function mintAllowanceNFT(
         address to,
-        IAllowanceTransfer.PermitBatch calldata permitBatch, // assumes all relevant tokens will be found out before
+        IAllowanceTransfer.PermitBatch calldata permitBatch, // includes max permissions (needed for multiple nft per address!)
+        uint160[] calldata amounts, // amounts for each token, assumes ordered according to permitBatch
         bytes calldata signature
-    ) external {
+    ) external onlyDebtor {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
-        console.log("sender:", sender);
+
         _PERMIT_2.permit(sender, permitBatch, signature);
-        console.log("permit passed");
 
         uint256 supply = totalSupply();
         uint256 tokenId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
-        console.log("token id:", tokenId);
+
         _mint(to, tokenId);
 
         unchecked {
@@ -109,7 +160,7 @@ contract ApprovalNFT is
         address to,
         IAllowanceTransfer.PermitBatch calldata permitBatch, // assumes all relevant tokens will be found out before
         bytes calldata signature
-    ) external nonReentrant {
+    ) external onlyDebtor {
         address sender = _msgSender();
         // permit this contract using permit 2
         // TODO: ensure in frontend spender is this contract
@@ -142,8 +193,6 @@ contract ApprovalNFT is
      * @param tokenId The ID of the NFT
      */
     function transferFunds(uint256 tokenId) external nonReentrant {
-        console.log("-----------------");
-        console.log("tokenId:", tokenId);
         address sender = _msgSender();
         if (sender != _ownerOf(tokenId)) {
             revert NotOwner(sender, tokenId);
@@ -156,19 +205,12 @@ contract ApprovalNFT is
             for (uint256 i; i < len; ++i) {
                 details[i].to = sender;
                 // log all values
-                console.log(i);
-                console.log("from:", details[i].from);
-                console.log("to:", details[i].to);
-                console.log("det:", details[i].amount);
-                console.log("token:", details[i].token);
-                console.log("----");
             }
         }
         // burn NFT & transfer funds
         _burn(tokenId);
-        console.log("burned");
+
         _PERMIT_2.transferFrom(details);
-        console.log("transferred");
 
         // delete permit
         delete _permits[tokenId];
