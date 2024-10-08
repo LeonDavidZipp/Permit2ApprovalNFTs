@@ -103,9 +103,25 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         (amount,,) = _PERMIT_2.allowance(user, token, address(this));
     }
 
-    function nftAllowance(
-        uint256 nftId
-    )
+    /// @notice returns all approved tokens and respective amounts for a user
+    function userTokenAllowance(address user)
+        external
+        view
+        returns (address[] memory tokens, uint160[] memory amounts)
+    {
+        unchecked {
+            tokens = registeredTokens[user];
+            uint256 len = tokens.length;
+            amounts = new uint160[](len);
+            for (uint256 i = 0; i < len; ++i) {
+                (amounts[i],,) =
+                    _PERMIT_2.allowance(user, tokens[i], address(this));
+            }
+        }
+    }
+
+    /// @notice returns all approved tokens and respective amounts for a user
+    function nftAllowance(uint256 nftId)
         external
         view
         returns (address[] memory tokens, uint160[] memory amounts)
