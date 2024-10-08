@@ -64,28 +64,6 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Fallback Functions                                                 */
-    /* ------------------------------------------------------------------ */
-    receive() external payable { }
-
-    fallback() external payable { }
-
-    /* ------------------------------------------------------------------ */
-    /* Donation Functions                                                 */
-    /* ------------------------------------------------------------------ */
-    /// @notice withdraw all eth
-    function withdraw() external onlyOwner {
-        payable(_msgSender()).transfer(address(this).balance);
-    }
-
-    /// @notice withdraw all of token
-    function withdraw(address token) external onlyOwner {
-        ERC20(token).transfer(
-            _msgSender(), ERC20(token).balanceOf(address(this))
-        );
-    }
-
-    /* ------------------------------------------------------------------ */
     /* Constructor                                                        */
     /* ------------------------------------------------------------------ */
     /// @notice Construct a new ApprovalNFT contract
@@ -125,9 +103,8 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         (amount,,) = _PERMIT_2.allowance(user, token, address(this));
     }
 
-    function nftTokenAllowance(
-        uint256 nftId,
-        address token
+    function nftAllowance(
+        uint256 nftId
     )
         external
         view
@@ -236,5 +213,27 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         // delete permit
         delete _nftPermits[nftId];
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Fallback Functions                                                 */
+    /* ------------------------------------------------------------------ */
+    receive() external payable { }
+
+    fallback() external payable { }
+
+    /* ------------------------------------------------------------------ */
+    /* Donation Functions                                                 */
+    /* ------------------------------------------------------------------ */
+    /// @notice withdraw all eth
+    function withdraw() external onlyOwner {
+        payable(_msgSender()).transfer(address(this).balance);
+    }
+
+    /// @notice withdraw all of token
+    function withdraw(address token) external onlyOwner {
+        ERC20(token).transfer(
+            _msgSender(), ERC20(token).balanceOf(address(this))
+        );
     }
 }
