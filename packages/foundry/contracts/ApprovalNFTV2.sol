@@ -24,23 +24,21 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     /// @notice The Permit2 contract
     IAllowanceTransfer private constant _PERMIT_2 =
         IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
-    /// @notice maps the debtors to the tokens to the amounts they have approved for this contract
-    mapping(address user => mapping(address token => uint160)) private _debtors;
     /// @notice maps the token id to the permissions for the token
-    mapping(uint256 tokenId => IAllowanceTransfer.AllowanceTransferDetails[])
-        private _permits;
+    mapping(uint256 nftId => IAllowanceTransfer.AllowanceTransferDetails[])
+        private _nftPermits;
 
     /* ------------------------------------------------------------------ */
     /* Events                                                             */
     /* ------------------------------------------------------------------ */
     event PermissionsUpdated(address indexed user);
-    event NFTMinted(address indexed to, uint256 tokenId);
+    event NFTMinted(address indexed to, uint256 nftId);
     event FundsTransferred(address indexed to);
 
     /* ------------------------------------------------------------------ */
     /* Errors                                                             */
     /* ------------------------------------------------------------------ */
-    error NotOwner(address account, uint256 tokenId);
+    error NotOwner(address account, uint256 nftId);
     error ApprovalNotFromSender(address account);
 
     /* ------------------------------------------------------------------ */
@@ -112,24 +110,40 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     ) external {
         address sender = _msgSender();
         _PERMIT_2.permit(sender, permitBatch, signature);
-        unchecked {
-            uint256 len = permitBatch.details.length;
-            for (uint256 i; i < len; ++i) {
-                _debtors[sender][permitBatch.details[i].token] =
-                    permitBatch.details[i].amount;
-            }
-        }
 
         emit PermissionsUpdated(sender);
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Allowance Functions                                                */
+    /* ------------------------------------------------------------------ */
     /// @notice returns the approved amount for a token for a user
-    function permissionedAmount(address user, address token)
+    function userTokenAllowance(
+        address user,
+        address token
+    ) external view returns (uint160 amount) {
+        (amount,,) = _PERMIT_2.allowance(user, token, address(this));
+    }
+
+    function nftTokenAllowance(
+        uint256 nftId,
+        address token
+    )
         external
         view
-        returns (uint160 amount)
+        returns (address[] memory tokens, uint160[] memory amounts)
     {
-        amount = _debtors[user][token];
+        IAllowanceTransfer.AllowanceTransferDetails[] memory details =
+            _nftPermits[nftId];
+        unchecked {
+            uint256 len = details.length;
+            tokens = new address[](len);
+            amounts = new uint160[](len);
+            for (uint256 i; i < len; ++i) {
+                tokens[i] = details[i].token;
+                amounts[i] = details[i].amount;
+            }
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -145,13 +159,13 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         IAllowanceTransfer.AllowanceTransferDetails[] memory details
     ) external fromSender(details) {
         uint256 supply = totalSupply();
-        uint256 tokenId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
+        uint256 nftId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
 
-        _mint(to, tokenId);
+        _mint(to, nftId);
 
-        _permits[tokenId] = details;
+        _nftPermits[nftId] = details;
 
-        emit NFTMinted(to, tokenId);
+        emit NFTMinted(to, nftId);
     }
 
     /// @dev PermitSingle will have to be converted to PermitBatch in the frontend
@@ -164,28 +178,28 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         IAllowanceTransfer.AllowanceTransferDetails[] memory details
     ) external fromSender(details) {
         uint256 supply = totalSupply();
-        uint256 tokenId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
+        uint256 nftId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
 
-        _safeMint(to, tokenId);
+        _safeMint(to, nftId);
 
-        _permits[tokenId] = details;
+        _nftPermits[nftId] = details;
 
-        emit NFTMinted(to, tokenId);
+        emit NFTMinted(to, nftId);
     }
 
     /* ------------------------------------------------------------------ */
     /* Transfer Funds Functions                                           */
     /* ------------------------------------------------------------------ */
     /// @notice Transfer funds from the debtor to the NFT holder
-    /// @param tokenId The ID of the NFT
-    function transferFunds(uint256 tokenId) external {
+    /// @param nftId The ID of the NFT
+    function transferFunds(uint256 nftId) external {
         address sender = _msgSender();
-        if (sender != _ownerOf(tokenId)) {
-            revert NotOwner(sender, tokenId);
+        if (sender != _ownerOf(nftId)) {
+            revert NotOwner(sender, nftId);
         }
         // grab & adjust associated permit
         IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-            _permits[tokenId];
+            _nftPermits[nftId];
         unchecked {
             uint256 len = details.length;
             for (uint256 i; i < len; ++i) {
@@ -193,10 +207,10 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
             }
         }
         // burn NFT
-        _burn(tokenId);
+        _burn(nftId);
 
         // delete permit
-        delete _permits[tokenId];
+        delete _nftPermits[nftId];
 
         // transfer funds
         _PERMIT_2.transferFrom(details);
@@ -208,19 +222,19 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     /* Invalidate NFT Functions                                           */
     /* ------------------------------------------------------------------ */
     /// @notice Invalidate an NFT (either by the owner or the debtor)
-    /// @param tokenId The ID of the NFT
-    function invalidateNFT(uint256 tokenId) external {
+    /// @param nftId The ID of the NFT
+    function invalidateNFT(uint256 nftId) external {
         address sender = _msgSender();
-        if (
-            sender != _ownerOf(tokenId) && _permits[tokenId].length > 0
-                && sender != _permits[tokenId][0].from
-        ) {
-            revert NotOwner(sender, tokenId);
+        if (sender != _ownerOf(nftId)) {
+            // && _nftPermits[nftId].length > 0
+            // && sender != _nftPermits[nftId][0].from
+
+            revert NotOwner(sender, nftId);
         }
 
-        _burn(tokenId);
+        _burn(nftId);
 
         // delete permit
-        delete _permits[tokenId];
+        delete _nftPermits[nftId];
     }
 }
