@@ -73,8 +73,7 @@ contract ApprovalNFTTest is
         view
         returns (IAllowanceTransfer.AllowanceTransferDetails[] memory details)
     {
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-            new IAllowanceTransfer.AllowanceTransferDetails[](2);
+        details = new IAllowanceTransfer.AllowanceTransferDetails[](2);
         details[0] = IAllowanceTransfer.AllowanceTransferDetails({
             from: from,
             to: to,
@@ -100,23 +99,77 @@ contract ApprovalNFTTest is
         bytes memory sig1 =
             getPermitBatchSignature(permitBatch, signer, DOMAIN_SEPARATOR);
 
-        vm.Prank(vm.addr(signer));
+        vm.prank(vm.addr(signer));
         nft.updatePermissions(permitBatch, sig1);
 
         // check allowances for nft contract
         (uint160 amount2, uint48 expiration, uint48 nonce) = IAllowanceTransfer(
             permit2
-        ).allowance(sender, address(token0), address(nft));
+        ).allowance(vm.addr(signer), address(token0), address(nft));
         assertEq(amount2, amount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
 
         (amount2, expiration, nonce) = IAllowanceTransfer(permit2).allowance(
-            sender, address(token1), address(nft)
+            vm.addr(signer), address(token1), address(nft)
         );
-        assertEq(amount2, defaultAmount);
+        assertEq(amount2, amount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
+    }
+
+    function _mintAllowanceNFT(uint256 from, address to) public {
+        // prepare permit
+        // _updatePermissions(from, type(uint160).max);
+        IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
+            _defaultAllowanceTransferDetails(vm.addr(from), to);
+
+        // mint nft with permit to receiver
+        vm.prank(vm.addr(from));
+        nft.mintAllowanceNFT(to, permitDetails);
+
+        uint256 nftId = nft.totalSupply() - 1;
+
+        // check balance of account that received nft
+        assertEq(nft.balanceOf(to), 1);
+        assertEq(nft.ownerOf(nftId), to);
+
+        // check nft details are correct
+        (address[] memory tokens, uint160[] memory amounts) =
+            nft.nftAllowance(nftId);
+
+        assertEq(tokens.length, 2);
+        assertEq(tokens[0], address(token0));
+        assertEq(amounts[0], defaultAmount);
+        assertEq(tokens[1], address(token1));
+        assertEq(amounts[1], defaultAmount);
+    }
+
+    function _safeMintAllowanceNFT(uint256 from, address to) public {
+        // prepare permit
+        // _updatePermissions(from, type(uint160).max);
+        IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
+            _defaultAllowanceTransferDetails(vm.addr(from), to);
+
+        // mint nft with permit to receiver
+        vm.prank(vm.addr(from));
+        nft.safeMintAllowanceNFT(to, permitDetails);
+
+        uint256 nftId = nft.totalSupply() - 1;
+
+        // check balance of account that received nft
+        assertEq(nft.balanceOf(to), 1);
+        assertEq(nft.ownerOf(nftId), to);
+
+        // check nft details are correct
+        (address[] memory tokens, uint160[] memory amounts) =
+            nft.nftAllowance(nftId);
+
+        assertEq(tokens.length, 2);
+        assertEq(tokens[0], address(token0));
+        assertEq(amounts[0], defaultAmount);
+        assertEq(tokens[1], address(token1));
+        assertEq(amounts[1], defaultAmount);
     }
 
     function setUp() public {
@@ -138,77 +191,30 @@ contract ApprovalNFTTest is
     }
 
     /* ------------------------------------------------------------------ */
+    /* Update Permissions                                                 */
+    /* ------------------------------------------------------------------ */
+    function test_updatePermissions() public {
+        _updatePermissions(acc1, type(uint160).max);
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Mint Functions                                                     */
     /* ------------------------------------------------------------------ */
     function test_mintAllowanceNFT() public {
-        // prepare permit
         _updatePermissions(acc1, type(uint160).max);
-        IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
-            _defaultAllowanceTransferDetails(pubKey1, pubKey2);
-
-        // mint nft with permit to receiver
-        vm.prank(vm.addr(signer));
-        nft.mintAllowanceNFT(receiver, permitDetails);
-
-        uint256 nftId = nft.totalSupply() - 1;
-
-        // check balance of account that received nft
-        assertEq(nft.balanceOf(receiver), 1);
-        assertEq(nft.ownerOf(nftId), receiver);
-
-        // check nft details are correct
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details = nft.nftAllowance(nftId);
-
-        address[] memory tokens = new address[](2);
-        tokens[0] = address(token0);
-        tokens[1] = address(token1);
-        uint256 len = details.length;
-        assertEq(len, 2);
-        for (uint256 i = 0; i < len; ++i) {
-            assertEq(details[i].from, pubKey1);
-            assertEq(details[i].to, pubKey2);
-            assertEq(details[i].amount, defaultAmount);
-            assertEq(details[i].token, tokens[i]);
-        }
+        _mintAllowanceNFT(acc1, pubKey2);
     }
 
     function test_safeMintAllowanceNFT() public {
-        // prepare permit
         _updatePermissions(acc1, type(uint160).max);
-        IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
-            _defaultAllowanceTransferDetails(pubKey1, pubKey2);
-
-        // mint nft with permit to receiver
-        vm.prank(vm.addr(signer));
-        nft.safeMintAllowanceNFT(receiver, permitDetails);
-
-        uint256 nftId = nft.totalSupply() - 1;
-
-        // check balance of account that received nft
-        assertEq(nft.balanceOf(receiver), 1);
-        assertEq(nft.ownerOf(nftId), receiver);
-
-        // check nft details are correct
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details = nft.nftAllowance(nftId);
-
-        address[] memory tokens = new address[](2);
-        tokens[0] = address(token0);
-        tokens[1] = address(token1);
-        uint256 len = details.length;
-        assertEq(len, 2);
-        for (uint256 i = 0; i < len; ++i) {
-            assertEq(details[i].from, pubKey1);
-            assertEq(details[i].to, pubKey2);
-            assertEq(details[i].amount, defaultAmount);
-            assertEq(details[i].token, tokens[i]);
-        }
+        _safeMintAllowanceNFT(acc1, pubKey2);
     }
 
     /* ------------------------------------------------------------------ */
     /* Transfer Functions                                                 */
     /* ------------------------------------------------------------------ */
     function test_transferFunds() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
@@ -224,7 +230,7 @@ contract ApprovalNFTTest is
     }
 
     function test_transferFunds_afterNFTChangedOwner() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
         vm.prank(pubKey2);
         nft.safeTransferFrom(pubKey2, pubKey3, 0);
 
@@ -245,8 +251,8 @@ contract ApprovalNFTTest is
     function test_transferFunds_multipleNFT_differentDebtors_inParallel()
         public
     {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
-        _mintAllowanceNFT(acc2, pubKey2, pubKey3);
+        _mintAllowanceNFT(acc1, pubKey2);
+        _mintAllowanceNFT(acc2, pubKey3);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
@@ -276,7 +282,7 @@ contract ApprovalNFTTest is
     function test_transferFunds_multipleNFT_differentDebtors_inSuccession()
         public
     {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
@@ -290,7 +296,7 @@ contract ApprovalNFTTest is
         assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
         assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
 
-        _mintAllowanceNFT(acc2, pubKey2, pubKey3);
+        _mintAllowanceNFT(acc2, pubKey3);
 
         uint256 balance2_token0 = token0.balanceOf(pubKey2);
         uint256 balance2_token1 = token1.balanceOf(pubKey2);
@@ -306,8 +312,8 @@ contract ApprovalNFTTest is
     }
 
     function test_transferFunds_multipleNFT_sameDebtor_inParallel() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
-        _mintAllowanceNFT(acc1, pubKey1, pubKey3);
+        _mintAllowanceNFT(acc1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey3);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
@@ -335,7 +341,7 @@ contract ApprovalNFTTest is
     }
 
     function test_transferFunds_multipleNFT_sameDebtor_inSuccession() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
 
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
@@ -349,7 +355,7 @@ contract ApprovalNFTTest is
         assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
         assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
 
-        _mintAllowanceNFT(acc1, pubKey1, pubKey3);
+        _mintAllowanceNFT(acc1, pubKey3);
 
         uint256 balance2_token0 = token0.balanceOf(pubKey2);
         uint256 balance2_token1 = token1.balanceOf(pubKey2);
@@ -365,13 +371,13 @@ contract ApprovalNFTTest is
     }
 
     function testFail_transferFunds_notOwner() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
         vm.prank(pubKey3);
         nft.transferFunds(0);
     }
 
     function testFail_transferFunds_retry() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
         vm.startPrank(pubKey3);
         nft.transferFunds(0);
         nft.transferFunds(0);
@@ -379,7 +385,7 @@ contract ApprovalNFTTest is
     }
 
     function testFail_transferFunds_nonExistingNFT() public {
-        _mintAllowanceNFT(acc1, pubKey1, pubKey2);
+        _mintAllowanceNFT(acc1, pubKey2);
         vm.prank(pubKey2);
         nft.transferFunds(1);
     }
