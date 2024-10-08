@@ -156,7 +156,11 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _mint(to, nftId);
 
-        _nftPermits[nftId] = details;
+        // _nftPermits[nftId] = details;
+        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
+        for (uint256 i = 0; i < details.length; i++) {
+            storageDetails.push(details[i]);
+        }
 
         emit NFTMinted(to, nftId);
     }
@@ -175,7 +179,11 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _safeMint(to, nftId);
 
-        _nftPermits[nftId] = details;
+        // _nftPermits[nftId] = details;
+        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
+        for (uint256 i = 0; i < details.length; i++) {
+            storageDetails.push(details[i]);
+        }
 
         emit NFTMinted(to, nftId);
     }

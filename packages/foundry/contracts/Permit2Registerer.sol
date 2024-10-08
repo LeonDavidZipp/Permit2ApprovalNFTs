@@ -16,12 +16,13 @@ contract Permit2Registerer is Context {
     /// @notice Helper function for users to approve permit2
     /// @dev assumes only new tokens!
     /// @param tokens The tokens to approve
+
     function registerForPermit2(address[] memory tokens) external {
         unchecked {
             uint256 len = tokens.length;
-            address[] storage registeredTokens = _registeredTokens[_msgSender()];
+            address[] storage _registeredTokens = registeredTokens[_msgSender()];
             for (uint256 i; i < len; ++i) {
-                registeredTokens.push(tokens[i]);
+                _registeredTokens.push(tokens[i]);
                 ERC20(tokens[i]).approve(_Permit_2_ADDRESS, type(uint160).max);
             }
         }
@@ -31,16 +32,16 @@ contract Permit2Registerer is Context {
     /// @param tokens The tokens to revoke
     function unregisterFromPermit2(address[] calldata tokens) external {
         unchecked {
-            address[] storage registeredTokens = _registeredTokens[_msgSender()];
+            address[] storage _registeredTokens = registeredTokens[_msgSender()];
 
             uint256 len = tokens.length;
             for (uint256 i; i < len; ++i) {
-                for (uint256 j = 0; j < registeredTokens.length; ++j) {
-                    if (registeredTokens[j] == tokens[i]) {
+                for (uint256 j = 0; j < _registeredTokens.length; ++j) {
+                    if (_registeredTokens[j] == tokens[i]) {
                         ERC20(tokens[i]).approve(_Permit_2_ADDRESS, 0);
-                        registeredTokens[j] =
-                            registeredTokens[registeredTokens.length - 1];
-                        registeredTokens.pop();
+                        _registeredTokens[j] =
+                            _registeredTokens[_registeredTokens.length - 1];
+                        _registeredTokens.pop();
                         break; // Exit the inner loop once the token is found and removed
                     }
                 }
@@ -52,14 +53,14 @@ contract Permit2Registerer is Context {
     function unregisterFromPermit2() external {
         unchecked {
             address sender = _msgSender();
-            address[] storage registeredTokens = _registeredTokens[sender];
+            address[] storage _registeredTokens = registeredTokens[sender];
 
-            uint256 len = registeredTokens.length;
+            uint256 len = _registeredTokens.length;
             for (uint256 i; i < len; ++i) {
-                ERC20(registeredTokens[i]).approve(_Permit_2_ADDRESS, 0);
+                ERC20(_registeredTokens[i]).approve(_Permit_2_ADDRESS, 0);
             }
 
-            delete _registeredTokens[sender];
+            delete registeredTokens[sender];
         }
     }
 }
