@@ -8,32 +8,27 @@ contract Permit2Registerer is Context {
     address private constant _Permit_2_ADDRESS =
         address(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
-    /**
-     * maps the account to the tokens they have registered
-     */
-    mapping(address account => address[]) private _registeredTokens;
+    /// @notice maps the user to the tokens they have registered
+    mapping(address user => address[]) public registeredTokens;
     /* ------------------------------------------------------------------ */
     /* Permit2 Functions                                                  */
     /* ------------------------------------------------------------------ */
-    /**
-     * @notice Helper function for users to approve permit2
-     * @param tokens The tokens to approve
-     */
-
+    /// @notice Helper function for users to approve permit2
+    /// @dev assumes only new tokens!
+    /// @param tokens The tokens to approve
     function registerForPermit2(address[] memory tokens) external {
         unchecked {
             uint256 len = tokens.length;
-            _registeredTokens[_msgSender()] = tokens;
+            address[] storage registeredTokens = _registeredTokens[_msgSender()];
             for (uint256 i; i < len; ++i) {
+                registeredTokens.push(tokens[i]);
                 ERC20(tokens[i]).approve(_Permit_2_ADDRESS, type(uint160).max);
             }
         }
     }
 
-    /**
-     * @notice Helper function for users to revoke a set of permissions of permit2 given through this contract
-     * @param tokens The tokens to revoke
-     */
+    /// @notice Helper function for users to revoke a set of permissions of permit2 given through this contract
+    /// @param tokens The tokens to revoke
     function unregisterFromPermit2(address[] calldata tokens) external {
         unchecked {
             address[] storage registeredTokens = _registeredTokens[_msgSender()];
@@ -53,9 +48,7 @@ contract Permit2Registerer is Context {
         }
     }
 
-    /**
-     * @notice Helper function for users to revoke all permissions of permit2 given through this contract
-     */
+    /// @notice Helper function for users to revoke all permissions of permit2 given through this contract
     function unregisterFromPermit2() external {
         unchecked {
             address sender = _msgSender();
