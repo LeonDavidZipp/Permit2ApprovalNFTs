@@ -13,3 +13,6 @@
 [submodule "packages/foundry/lib/permit2"]
 	path = packages/foundry/lib/permit2
 	url = https://github.com/Uniswap/permit2
+[submodule "packages/foundry/lib/SolLibrary"]
+	path = packages/foundry/lib/SolLibrary
+	url = https://github.com/LeonDavidZipp/SolLibrary
