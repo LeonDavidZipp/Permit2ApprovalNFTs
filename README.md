@@ -27,35 +27,6 @@ sequenceDiagram
   deactivate Smart Contract
 ```
 
-## V2: Listener
-
-```mermaid
-sequenceDiagram
-  participant Debtor
-  participant Listener
-  participant Smart Contract
-  participant Creditor
-  Debtor->>Smart Contract: give token approval
-  activate Smart Contract
-  Smart Contract->>Creditor: mint withdrawal NFT to
-  activate Listener
-  activate Creditor
-  opt
-    Creditor-->>Creditor: send NFT to<br/>other address
-  end
-  loop
-    Listener->>Listener: search transactions included<br/>in blocks for NFT transfers to<br/> Smart Contract
-  end
-  Creditor->>Smart Contract: send NFT back to
-  Listener->>Smart Contract: call token transfer method
-  Smart Contract->>Creditor: send funds to
-  %% Smart Contract->>Creditor: withdraw NFT
-  %% Smart Contract->>Creditor: transfer approved funds<br/>from Account to
-  deactivate Creditor
-  deactivate Smart Contract
-  deactivate Listener
-```
-
 # 🏗 Scaffold-ETH 2
 
 <h4 align="center">
