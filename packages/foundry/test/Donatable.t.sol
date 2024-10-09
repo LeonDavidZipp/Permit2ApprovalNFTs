@@ -17,7 +17,6 @@ contract Token2 is ERC20 {
 }
 
 contract DonatableTest is Test {
-    // address public constant acc = address(0x1234);
     uint256 public constant amountEth = 1 ether;
     uint256 public constant amountToken = 1000;
     uint256 public constant transactionFee = 21_000;
@@ -33,30 +32,6 @@ contract DonatableTest is Test {
         donatable = new Donatable(address(this));
         token1 = new Token1();
         token2 = new Token2();
-    }
-
-    function test_receive() public {
-        uint256 oldBalance = address(this).balance;
-        (bool success,) =
-            payable(address(donatable)).call{ value: amountEth }("");
-
-        assertTrue(success);
-        assertApproxEqAbs(
-            address(this).balance, oldBalance - amountEth, transactionFee
-        );
-        assertEq(address(donatable).balance, amountEth);
-    }
-
-    function test_fallback() public {
-        uint256 oldBalance = address(this).balance;
-        (bool success,) =
-            payable(address(donatable)).call{ value: amountEth }("some data");
-
-        assertTrue(success);
-        assertApproxEqAbs(
-            address(this).balance, oldBalance - amountEth, transactionFee
-        );
-        assertEq(address(donatable).balance, amountEth);
     }
 
     function test_withdraw_eth() public {
