@@ -22,13 +22,23 @@ contract Donatable is Ownable {
     /* ------------------------------------------------------------------ */
     /// @notice withdraw all eth
     function withdraw() external onlyOwner {
-        payable(_msgSender()).transfer(address(this).balance);
+        // payable(_msgSender()).transfer(address(this).balance);
+        (bool success,) =
+            payable(_msgSender()).call{ value: address(this).balance }("");
+        if (!success) {
+            revert();
+        }
     }
 
     /// @notice withdraw all of token
-    function withdraw(address token) external onlyOwner {
-        ERC20(token).transfer(
-            _msgSender(), ERC20(token).balanceOf(address(this))
-        );
+    function withdraw(address[] calldata tokens) external onlyOwner {
+        unchecked {
+            uint256 len = tokens.length;
+            for (uint256 i = 0; i < len; ++i) {
+                ERC20(tokens[i]).transfer(
+                    _msgSender(), ERC20(tokens[i]).balanceOf(address(this))
+                );
+            }
+        }
     }
 }
