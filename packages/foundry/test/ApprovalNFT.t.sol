@@ -203,7 +203,6 @@ contract ApprovalNFTTest is
         _updatePermissions(acc1, type(uint160).max);
         console.log("default nonce 2: ", defaultNonce);
         _updatePermissions(acc1, 0);
-
     }
 
     /* ------------------------------------------------------------------ */

@@ -229,6 +229,7 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     function invalidateNFT(uint256 nftId) external {
         address sender = _msgSender();
         if (sender != _ownerOf(nftId)) {
+            // TODO figure out if both debtor & owner should be able to invalidate
             // && _nftPermits[nftId].length > 0
             // && sender != _nftPermits[nftId][0].from
 
