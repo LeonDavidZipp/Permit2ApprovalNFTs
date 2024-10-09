@@ -89,7 +89,7 @@ contract ApprovalNFTTest is
     }
 
     /// @notice Update the permissions for the signer
-    function _updatePermissions(uint256 signer, uint160 amount) public {
+    function _updatePermissions(uint256 signer, uint160 amount) internal {
         address[] memory tokens =
             AddressBuilder.fill(1, address(token0)).push(address(token1));
         IAllowanceTransfer.PermitBatch memory permitBatch =
@@ -118,7 +118,7 @@ contract ApprovalNFTTest is
         assertEq(nonce, defaultNonce + 1);
     }
 
-    function _mintAllowanceNFT(uint256 from, address to) public {
+    function _mintAllowanceNFT(uint256 from, address to) internal {
         // prepare permit
         // _updatePermissions(from, type(uint160).max);
         IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
@@ -145,7 +145,7 @@ contract ApprovalNFTTest is
         assertEq(amounts[1], defaultAmount);
     }
 
-    function _safeMintAllowanceNFT(uint256 from, address to) public {
+    function _safeMintAllowanceNFT(uint256 from, address to) internal {
         // prepare permit
         // _updatePermissions(from, type(uint160).max);
         IAllowanceTransfer.AllowanceTransferDetails[] memory permitDetails =
