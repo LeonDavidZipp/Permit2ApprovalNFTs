@@ -3,8 +3,8 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
-import "@sollib/permit2ext/Permit2Registerer.sol";
-import "@sollib/paying/Donatable.sol";
+import "@sollib/src/Permit2Extensions/Permit2Registerer.sol";
+import "@sollib/src/Paying/Donatable.sol";
 
 /// @title ApprovalNFT
 /// @notice A protocol for creating NFTs that have a set of permissions for transferring tokens,
