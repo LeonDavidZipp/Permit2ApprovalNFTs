@@ -3,9 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
-// import "./Permit2Registerer.sol";
 import "@sollib/permit2ext/Permit2Registerer.sol";
-// import "./Donatable.sol";
 import "@sollib/paying/Donatable.sol";
 
 /// @title ApprovalNFT
