@@ -19,14 +19,14 @@ contract ApprovalNFTTest is
 {
     using AddressBuilder for address[];
 
-    uint256 ownerPrivKey = 0x0123456789;
-    address owner = vm.addr(ownerPrivKey);
-    uint256 acc1 = 0x01234;
-    address pubKey1 = vm.addr(acc1);
-    uint256 acc2 = 0x56789;
-    address pubKey2 = vm.addr(acc2);
-    uint256 acc3 = 0x12345;
-    address pubKey3 = vm.addr(acc3);
+    uint256 public ownerPrivKey = 0x0123456789;
+    address public owner = vm.addr(ownerPrivKey);
+    uint256 public acc1 = 0x01234;
+    address public pubKey1 = vm.addr(acc1);
+    uint256 public acc2 = 0x56789;
+    address public pubKey2 = vm.addr(acc2);
+    uint256 public acc3 = 0x12345;
+    address public pubKey3 = vm.addr(acc3);
     uint160 public immutable defaultAmount = 10 ** 18;
     uint48 public defaultNonce;
     uint48 public immutable defaultExpiration =
