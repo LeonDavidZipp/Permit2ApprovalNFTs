@@ -1,13 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "permit2/src/interfaces/IAllowanceTransfer.sol";
 import "./Permit2Registerer.sol";
-
-import "forge-std/Test.sol";
+import "./Donatable.sol";
 
 /// @title ApprovalNFT
 /// @notice A protocol for creating NFTs that have a set of permissions for transferring tokens,
@@ -17,7 +14,7 @@ import "forge-std/Test.sol";
 ///      contract because of this as a helper for users
 /// @notice You can donate to this contract by simply sending ETH or ERC20 tokens to it and help
 ///         fund the development of this project
-contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
+contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /* ------------------------------------------------------------------ */
     /* State Variables                                                    */
     /* ------------------------------------------------------------------ */
@@ -75,7 +72,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         address owner_,
         string memory name_,
         string memory symbol_
-    ) ERC721(name_, symbol_) Ownable(owner_) { }
+    ) ERC721(name_, symbol_) Donatable(owner_) { }
 
     /* ------------------------------------------------------------------ */
     /* Permission Functions                                               */
@@ -157,7 +154,8 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _mint(to, nftId);
 
-        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
+        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails =
+            _nftPermits[nftId];
         for (uint256 i = 0; i < details.length; i++) {
             storageDetails.push(details[i]);
         }
@@ -179,7 +177,8 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _safeMint(to, nftId);
 
-        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
+        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails =
+            _nftPermits[nftId];
         for (uint256 i = 0; i < details.length; i++) {
             storageDetails.push(details[i]);
         }
@@ -239,27 +238,5 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         // delete permit
         delete _nftPermits[nftId];
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Fallback Functions                                                 */
-    /* ------------------------------------------------------------------ */
-    receive() external payable { }
-
-    fallback() external payable { }
-
-    /* ------------------------------------------------------------------ */
-    /* Donation Functions                                                 */
-    /* ------------------------------------------------------------------ */
-    /// @notice withdraw all eth
-    function withdraw() external onlyOwner {
-        payable(_msgSender()).transfer(address(this).balance);
-    }
-
-    /// @notice withdraw all of token
-    function withdraw(address token) external onlyOwner {
-        ERC20(token).transfer(
-            _msgSender(), ERC20(token).balanceOf(address(this))
-        );
     }
 }

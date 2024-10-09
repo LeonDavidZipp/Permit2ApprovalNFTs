@@ -15,7 +15,7 @@ contract Donatable is Ownable {
     /* ------------------------------------------------------------------ */
     /* Constructor                                                        */
     /* ------------------------------------------------------------------ */
-    constructor(address owner_) Ownable(owner_) {}
+    constructor(address owner_) Ownable(owner_) { }
 
     /* ------------------------------------------------------------------ */
     /* Donation Functions                                                 */
