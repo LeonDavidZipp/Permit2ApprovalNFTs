@@ -116,6 +116,7 @@ contract ApprovalNFTTest is
         assertEq(amount2, amount);
         assertEq(expiration, defaultExpiration);
         assertEq(nonce, defaultNonce + 1);
+        ++defaultNonce;
     }
 
     function _mintAllowanceNFT(uint256 from, address to) internal {
@@ -195,6 +196,14 @@ contract ApprovalNFTTest is
     /* ------------------------------------------------------------------ */
     function test_updatePermissions() public {
         _updatePermissions(acc1, type(uint160).max);
+    }
+
+    function test_updatePermissions_alreadySet() public {
+        console.log("default nonce 1: ", defaultNonce);
+        _updatePermissions(acc1, type(uint160).max);
+        console.log("default nonce 2: ", defaultNonce);
+        _updatePermissions(acc1, 0);
+
     }
 
     /* ------------------------------------------------------------------ */

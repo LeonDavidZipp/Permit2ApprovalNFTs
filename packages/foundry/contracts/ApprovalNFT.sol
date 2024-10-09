@@ -80,10 +80,12 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /// @notice Update or add permissions for a debtor using permit2
     /// @param permitBatch The permissions for a batch of tokens of the debtor
     /// @param signature The signature of the permit
+    /// @dev correct permit2 nonce NEEDS to be grabbed in the frontend
     function updatePermissions(
         IAllowanceTransfer.PermitBatch calldata permitBatch,
         bytes calldata signature
     ) external {
+        // TODO ?invalid nonce?
         address sender = _msgSender();
         _PERMIT_2.permit(sender, permitBatch, signature);
 
