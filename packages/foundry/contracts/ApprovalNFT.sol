@@ -38,8 +38,9 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
     /* ------------------------------------------------------------------ */
     /* Errors                                                             */
     /* ------------------------------------------------------------------ */
-    error NotOwner(address account, uint256 nftId);
     error ApprovalNotFromSender(address account);
+    error NotOwner(address account, uint256 nftId);
+    error Permit2PermissionError(uint256 nftId);
 
     /* ------------------------------------------------------------------ */
     /* Modifiers                                                          */
@@ -156,7 +157,6 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _mint(to, nftId);
 
-        // _nftPermits[nftId] = details;
         IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
         for (uint256 i = 0; i < details.length; i++) {
             storageDetails.push(details[i]);
@@ -179,7 +179,6 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
 
         _safeMint(to, nftId);
 
-        // _nftPermits[nftId] = details;
         IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails = _nftPermits[nftId];
         for (uint256 i = 0; i < details.length; i++) {
             storageDetails.push(details[i]);
@@ -214,9 +213,11 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
         delete _nftPermits[nftId];
 
         // transfer funds
-        _PERMIT_2.transferFrom(details);
-
-        emit FundsTransferred(sender);
+        try _PERMIT_2.transferFrom(details) {
+            emit FundsTransferred(sender);
+        } catch {
+            revert Permit2PermissionError(nftId);
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -233,6 +234,7 @@ contract ApprovalNFT is ERC721Enumerable, Ownable, Permit2Registerer {
             revert NotOwner(sender, nftId);
         }
 
+        // burn nft
         _burn(nftId);
 
         // delete permit

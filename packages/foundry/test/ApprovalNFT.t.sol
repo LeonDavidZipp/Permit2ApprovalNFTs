@@ -377,12 +377,14 @@ contract ApprovalNFTTest is
     }
 
     function testFail_transferFunds_notOwner() public {
+        _updatePermissions(acc1, type(uint160).max);
         _mintAllowanceNFT(acc1, pubKey2);
         vm.prank(pubKey3);
         nft.transferFunds(0);
     }
 
     function testFail_transferFunds_retry() public {
+        _updatePermissions(acc1, type(uint160).max);
         _mintAllowanceNFT(acc1, pubKey2);
         vm.startPrank(pubKey3);
         nft.transferFunds(0);
@@ -391,8 +393,15 @@ contract ApprovalNFTTest is
     }
 
     function testFail_transferFunds_nonExistingNFT() public {
+        _updatePermissions(acc1, type(uint160).max);
         _mintAllowanceNFT(acc1, pubKey2);
         vm.prank(pubKey2);
         nft.transferFunds(1);
+    }
+
+    function testFail_transferFunds_invalidPermissions() public {
+        _mintAllowanceNFT(acc1, pubKey2);
+        vm.prank(pubKey2);
+        nft.transferFunds(0);
     }
 }
