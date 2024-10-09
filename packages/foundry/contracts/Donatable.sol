@@ -22,7 +22,6 @@ contract Donatable is Ownable {
     /* ------------------------------------------------------------------ */
     /// @notice withdraw all eth
     function withdraw() external onlyOwner {
-        // payable(_msgSender()).transfer(address(this).balance);
         (bool success,) =
             payable(_msgSender()).call{ value: address(this).balance }("");
         if (!success) {
