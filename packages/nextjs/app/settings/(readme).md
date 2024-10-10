@@ -1,5 +1,5 @@
 ## Workings
-
+- seperate pages for both permit2 & permissions
 ### Permit2
 
 - provide users access to signing up for permit2
