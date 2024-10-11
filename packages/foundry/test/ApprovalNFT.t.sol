@@ -239,12 +239,6 @@ contract ApprovalNFTTest is
         _updatePermissions(acc1, type(uint160).max);
         _mintAllowanceNFT(acc1, pubKey2);
 
-        (
-            address[] memory tokens,
-            uint160[] memory amounts,
-            uint48 start,
-            uint48 expiration
-        ) = nft.nftAllowance(0);
         uint256 balance1_token0 = token0.balanceOf(pubKey1);
         uint256 balance1_token1 = token1.balanceOf(pubKey1);
 
@@ -252,9 +246,7 @@ contract ApprovalNFTTest is
         nft.transferFunds(0);
 
         assertEq(nft.balanceOf(pubKey2), 0);
-        console.log("token0 balance of pubKey2: ", token0.balanceOf(pubKey2));
         assertEq(token0.balanceOf(pubKey2), defaultAmount);
-        console.log("token1 balance of pubKey2: ", token1.balanceOf(pubKey2));
         assertEq(token1.balanceOf(pubKey2), defaultAmount);
         assertEq(token0.balanceOf(pubKey1), balance1_token0 - defaultAmount);
         assertEq(token1.balanceOf(pubKey1), balance1_token1 - defaultAmount);
