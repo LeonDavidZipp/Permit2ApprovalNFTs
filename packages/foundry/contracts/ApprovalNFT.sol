@@ -161,7 +161,6 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /// @param details The permissions for the NFT holder
     /// @param start The start time of the permit
     /// @param expiration The expiration time of the permit
-    ///
     function mintAllowanceNFT(
         address to,
         IAllowanceTransfer.AllowanceTransferDetails[] calldata details,
@@ -192,7 +191,6 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /// @param details The permissions for the NFT holder
     /// @param start The start time of the permit
     /// @param expiration The expiration time of the permit
-    ///
     function safeMintAllowanceNFT(
         address to,
         IAllowanceTransfer.AllowanceTransferDetails[] calldata details,
