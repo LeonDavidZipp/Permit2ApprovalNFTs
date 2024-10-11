@@ -1,9 +1,16 @@
 "use client";
 
+import Create from "./_components/create";
 import type { NextPage } from "next";
 
-const Create: NextPage = () => {
-  return <></>;
+const CreatePage: NextPage = () => {
+  return (
+    <>
+      <div>
+        <Create />
+      </div>
+    </>
+  );
 };
 
-export default Create;
+export default CreatePage;

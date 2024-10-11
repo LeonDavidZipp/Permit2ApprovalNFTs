@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Token } from "../_types";
 import ApprovalSettingsTab from "./_components/ApprovalSettingsTab";
 import Permit2SettingsTab from "./_components/Permit2SettingsTab";
-import { Token } from "./_types";
 import type { NextPage } from "next";
 
 const Settings: NextPage = () => {

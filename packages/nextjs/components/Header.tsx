@@ -38,7 +38,7 @@ export const menuLinks: HeaderMenuLink[] = [
     icon: <Cog8ToothIcon className="h-4 w-4" />,
   },
   {
-    label: "New",
+    label: "Create",
     href: "/debug",
     icon: <DocumentCurrencyDollarIcon className="h-4 w-4" />,
   },

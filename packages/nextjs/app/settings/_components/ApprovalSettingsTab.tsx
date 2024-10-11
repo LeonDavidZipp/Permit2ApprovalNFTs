@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Token } from "../_types";
+import { Token } from "../../_types";
 
 const ListItem: React.FC<Token> = ({ address, name, symbol, amount }) => {
   return (

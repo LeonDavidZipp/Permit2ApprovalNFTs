@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Token } from "../_types";
+import { Token } from "../../_types";
 
 const Permit2SettingsTab = () => {
   const [tokens, setTokens] = useState<Token[]>([]);
