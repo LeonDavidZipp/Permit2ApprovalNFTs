@@ -6,6 +6,8 @@ import "permit2/src/interfaces/IAllowanceTransfer.sol";
 import "@sollib/src/Permit2Extensions/Permit2Registerer.sol";
 import "@sollib/src/Paying/Donatable.sol";
 
+import "forge-std/Test.sol";
+
 /// @title ApprovalNFT
 /// @notice A protocol for creating NFTs that have a set of permissions for transferring tokens,
 ///         essentially making permissions independent from addresses and instead depending on
@@ -15,15 +17,22 @@ import "@sollib/src/Paying/Donatable.sol";
 /// @notice You can donate to this contract by simply sending ETH or ERC20 tokens to it and help
 ///         fund the development of this project
 contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
+    struct NFTPermit {
+        IAllowanceTransfer.AllowanceTransferDetails[] details;
+        uint48 start;
+        uint48 expiration;
+    }
     /* ------------------------------------------------------------------ */
     /* State Variables                                                    */
     /* ------------------------------------------------------------------ */
     /// @notice The Permit2 contract
+
     IAllowanceTransfer private constant _PERMIT_2 =
         IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     /// @notice maps the token id to the permissions for the token
-    mapping(uint256 nftId => IAllowanceTransfer.AllowanceTransferDetails[])
-        private _nftPermits;
+    // mapping(uint256 nftId => IAllowanceTransfer.AllowanceTransferDetails[])
+    //     private _nftPermits;
+    mapping(uint256 nftId => NFTPermit) private _nftPermits;
 
     /* ------------------------------------------------------------------ */
     /* Events                                                             */
@@ -38,6 +47,8 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     error ApprovalNotFromSender(address account);
     error NotOwner(address account, uint256 nftId);
     error Permit2PermissionError(uint256 nftId);
+    error NotStarted(uint256 nftId);
+    error Expired(uint256 nftId);
 
     /* ------------------------------------------------------------------ */
     /* Modifiers                                                          */
@@ -124,18 +135,24 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     function nftAllowance(uint256 nftId)
         external
         view
-        returns (address[] memory tokens, uint160[] memory amounts)
+        returns (
+            address[] memory tokens,
+            uint160[] memory amounts,
+            uint48 start,
+            uint48 expiration
+        )
     {
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-            _nftPermits[nftId];
+        NFTPermit storage permit = _nftPermits[nftId];
         unchecked {
-            uint256 len = details.length;
+            uint256 len = permit.details.length;
             tokens = new address[](len);
             amounts = new uint160[](len);
             for (uint256 i = 0; i < len; ++i) {
-                tokens[i] = details[i].token;
-                amounts[i] = details[i].amount;
+                tokens[i] = permit.details[i].token;
+                amounts[i] = permit.details[i].amount;
             }
+            start = permit.start;
+            expiration = permit.expiration;
         }
     }
 
@@ -146,20 +163,28 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /// @notice Mint an NFT and set the permit for the NFT
     /// @param to The address of the NFT holder
     /// @param details The permissions for the NFT holder
+    /// @param start The start time of the permit
+    /// @param expiration The expiration time of the permit
     ///
     function mintAllowanceNFT(
         address to,
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details
+        IAllowanceTransfer.AllowanceTransferDetails[] memory details,
+        uint48 start,
+        uint48 expiration
     ) external fromSender(details) {
         uint256 supply = totalSupply();
         uint256 nftId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
 
         _mint(to, nftId);
 
-        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails =
-            _nftPermits[nftId];
-        for (uint256 i = 0; i < details.length; i++) {
-            storageDetails.push(details[i]);
+        NFTPermit storage permit = _nftPermits[nftId];
+        unchecked {
+            uint256 len = details.length;
+            for (uint256 i = 0; i < len; ++i) {
+                permit.details.push(details[i]);
+            }
+            permit.start = start;
+            permit.expiration = expiration;
         }
 
         emit NFTMinted(to, nftId);
@@ -169,20 +194,28 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /// @notice Mint an NFT and set the permit for the NFT
     /// @param to The address of the NFT holder
     /// @param details The permissions for the NFT holder
+    /// @param start The start time of the permit
+    /// @param expiration The expiration time of the permit
     ///
     function safeMintAllowanceNFT(
         address to,
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details
+        IAllowanceTransfer.AllowanceTransferDetails[] memory details,
+        uint48 start,
+        uint48 expiration
     ) external fromSender(details) {
         uint256 supply = totalSupply();
         uint256 nftId = supply == 0 ? 0 : tokenByIndex(supply - 1) + 1;
 
         _safeMint(to, nftId);
 
-        IAllowanceTransfer.AllowanceTransferDetails[] storage storageDetails =
-            _nftPermits[nftId];
-        for (uint256 i = 0; i < details.length; i++) {
-            storageDetails.push(details[i]);
+        NFTPermit storage permit = _nftPermits[nftId];
+        unchecked {
+            uint256 len = details.length;
+            for (uint256 i = 0; i < len; ++i) {
+                permit.details.push(details[i]);
+            }
+            permit.start = start;
+            permit.expiration = expiration;
         }
 
         emit NFTMinted(to, nftId);
@@ -198,13 +231,18 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
         if (sender != _ownerOf(nftId)) {
             revert NotOwner(sender, nftId);
         }
+        NFTPermit memory permit = _nftPermits[nftId];
+        if (block.timestamp < permit.start) {
+            revert NotStarted(nftId);
+        }
+        if (block.timestamp > permit.expiration) {
+            revert Expired(nftId);
+        }
         // grab & adjust associated permit
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details =
-            _nftPermits[nftId];
         unchecked {
-            uint256 len = details.length;
+            uint256 len = permit.details.length;
             for (uint256 i = 0; i < len; ++i) {
-                details[i].to = sender;
+                permit.details[i].to = sender;
             }
         }
         // burn NFT
@@ -214,7 +252,7 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
         delete _nftPermits[nftId];
 
         // transfer funds
-        try _PERMIT_2.transferFrom(details) {
+        try _PERMIT_2.transferFrom(permit.details) {
             emit FundsTransferred(sender);
         } catch {
             revert Permit2PermissionError(nftId);
