@@ -26,7 +26,6 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /* State Variables                                                    */
     /* ------------------------------------------------------------------ */
     /// @notice The Permit2 contract
-
     IAllowanceTransfer private constant _PERMIT_2 =
         IAllowanceTransfer(address(0x000000000022D473030F116dDEE9F6B43aC78BA3));
     /// @notice maps the token id to the permissions for the token
@@ -58,7 +57,7 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
      * @param details The details of the transfer
      */
     modifier fromSender(
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details
+        IAllowanceTransfer.AllowanceTransferDetails[] calldata details
     ) {
         unchecked {
             address sender = _msgSender();
@@ -168,7 +167,7 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     ///
     function mintAllowanceNFT(
         address to,
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details,
+        IAllowanceTransfer.AllowanceTransferDetails[] calldata details,
         uint48 start,
         uint48 expiration
     ) external fromSender(details) {
@@ -199,7 +198,7 @@ contract ApprovalNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     ///
     function safeMintAllowanceNFT(
         address to,
-        IAllowanceTransfer.AllowanceTransferDetails[] memory details,
+        IAllowanceTransfer.AllowanceTransferDetails[] calldata details,
         uint48 start,
         uint48 expiration
     ) external fromSender(details) {
