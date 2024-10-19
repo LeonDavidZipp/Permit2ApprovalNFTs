@@ -155,6 +155,8 @@ contract DirectDebitNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     /* ------------------------------------------------------------------ */
     /* Mint Functions                                                     */
     /* ------------------------------------------------------------------ */
+    /// Question: who should be allowed to create NFTs with certain details? Only the debtor or other authorized parties too?
+
     /// @dev PermitSingle will have to be converted to PermitBatch in the frontend
     /// @notice Mint an NFT and set the permit for the NFT
     /// @param to The address of the NFT holder
@@ -216,9 +218,9 @@ contract DirectDebitNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Transfer Funds Functions                                           */
+    /* Claim          Functions                                           */
     /* ------------------------------------------------------------------ */
-    /// @notice Transfer funds from the debtor to the NFT holder
+    /// @notice Transfers all permitted funds from the debtor to the NFT holder
     /// @param nftId The ID of the NFT
     function claim(uint256 nftId) external {
         address sender = _msgSender();
