@@ -218,7 +218,7 @@ contract DirectDebitNFT is ERC721Enumerable, Permit2Registerer, Donatable {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Claim          Functions                                           */
+    /* Claim Functions                                                    */
     /* ------------------------------------------------------------------ */
     /// @notice Transfers all permitted funds from the debtor to the NFT holder
     /// @param nftId The ID of the NFT
